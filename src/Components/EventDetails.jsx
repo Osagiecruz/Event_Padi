@@ -1,9 +1,26 @@
 import React, { useState } from 'react';
 import { Calendar, MapPin, Users, MessageCircle, Clock, User, Building2, Star, Heart, Share2, Bell, Search } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom'; // Added Link import
+
 
 const EventDetails = () => {
   const [activeTab, setActiveTab] = useState('about');
   const [question, setQuestion] = useState('');
+  const navigate = useNavigate();
+  
+
+
+  const navItems = [
+  { label: 'Events', path: '/event-discovery' },
+  { label: 'Learn', path: '/event-details' },
+  { label: 'Connect', path: '/contact-chat' },
+  { label: 'Profile', path: '/community' },
+];
+
+const handleNavClick = (label, path) => {
+    setActiveTab(label);
+    navigate(path);
+  };
 
   const attendees = [
     { name: 'Chioma Nwokelemd', role: 'CEO Marketing Co.', avatar: '👩‍💼' },
@@ -74,25 +91,25 @@ const EventDetails = () => {
                   <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
                     <Calendar className="w-5 h-5 text-white" />
                   </div>
-                  <span className="text-xl font-bold text-gray-900">EventPadi</span>
+                  <span className="text-xl font-bold text-gray-900"><Link to="/">EventPadi</Link></span>
                 </div>
     
                 {/* Navigation */}
-                <nav className="hidden md:flex space-x-8">
-                  {['Events', 'Learn', 'Connect', 'Profile'].map((item) => (
-                    <button
-                      key={item}
-                      onClick={() => setActiveTab(item)}
-                      className={`text-sm font-medium transition-colors ${
-                        activeTab === item
-                          ? 'text-purple-600 border-b-2 border-purple-600'
-                          : 'text-gray-600 hover:text-purple-600'
-                      }`}
-                    >
-                      {item}
-                    </button>
-                  ))}
-                </nav>
+                 <nav className="hidden md:flex space-x-8">
+      {navItems.map(({ label, path }) => (
+        <button
+          key={label}
+          onClick={() => handleNavClick(label, path)}
+          className={`text-sm font-medium transition-colors ${
+            activeTab === label
+              ? 'text-purple-600 border-b-2 border-purple-600'
+              : 'text-gray-600 hover:text-purple-600'
+          }`}
+        >
+          {label}
+        </button>
+      ))}
+    </nav>
     
                 {/* Search and Profile */}
                 <div className="flex items-center space-x-4">
