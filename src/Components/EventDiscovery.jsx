@@ -1,13 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Bell, Calendar, Users, Heart, Star, ArrowRight, Play, Check, MapPin, Clock, Filter } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom'; // Added useNavigate import
+import { auth } from '../Firebase.jsx';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 const EventDiscovery = () => {
   const [activeTab, setActiveTab] = useState('Events');
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All Events');
   const [selectedLocation, setSelectedLocation] = useState('New York');
   const [selectedDate, setSelectedDate] = useState('This Week');
   const navigate = useNavigate();
+
+
+  // Monitor authentication state
+    useEffect(() => {
+      const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        setUser(currentUser);
+        setLoading(false);
+      });
+  
+      return () => unsubscribe();
+    }, []);
     
     
     
@@ -18,10 +33,29 @@ const EventDiscovery = () => {
       { label: 'Profile', path: '/community' },
     ];
     
+    // const handleNavClick = (label, path) => {
+    //     setActiveTab(label);
+    //     navigate(path);
+    //   };
     const handleNavClick = (label, path) => {
-        setActiveTab(label);
-        navigate(path);
-      };
+    if (!user) {
+      // If user is not authenticated, redirect to login
+      navigate('/login', { state: { redirectTo: path } });
+      return;
+    }
+    setActiveTab(label);
+    navigate(path);
+  };
+
+   const handleSignOut = async () => {
+     try {
+       await signOut(auth);
+       setUser(null);
+       navigate('/');
+     } catch (error) {
+       console.error('Sign out error:', error);
+     }
+   };   
   
 
   const categories = [
@@ -162,57 +196,102 @@ const EventDiscovery = () => {
     }
   ];
 
+
+if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mx-auto mb-4">
+            <Calendar className="w-5 h-5 text-white" />
+          </div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-     <div className="min-h-screen bg-gray-50">
-          {/* Header */}
-          <header className="bg-white shadow-sm border-b">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex justify-between items-center h-16">
-                {/* Logo */}
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                    <Calendar className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="text-xl font-bold text-gray-900"><Link to="/">EventPadi</Link></span>
-                </div>
-    
-                {/* Navigation */}
-                <nav className="hidden md:flex space-x-8">
-      {navItems.map(({ label, path }) => (
-        <button
-          key={label}
-          onClick={() => handleNavClick(label, path)}
-          className={`text-sm font-medium transition-colors ${
-            activeTab === label
-              ? 'text-purple-600 border-b-2 border-purple-600'
-              : 'text-gray-600 hover:text-purple-600'
-          }`}
-        >
-          {label}
-        </button>
-      ))}
-    </nav>
-    
-                {/* Search and Profile */}
-                <div className="flex items-center space-x-4">
-                  <div className="relative hidden md:block">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <input
-                      type="text"
-                      placeholder="Search for events..."
-                      className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent w-64"
-                    />
-                  </div>
-                  <button className="p-2 text-gray-600 hover:text-purple-600 transition-colors">
-                    <Bell className="w-5 h-5" />
-                  </button>
-                  <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm font-medium">A</span>
-                  </div>
-                </div>
+<div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo */}
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-white" />
               </div>
+              <span className="text-xl font-bold text-gray-900"><Link to="/">EventPadi</Link></span>
             </div>
-          </header>
+
+            {/* Navigation */}
+            <nav className="hidden md:flex space-x-8">
+              {navItems.map(({ label, path }) => (
+                <button
+                  key={label}
+                  onClick={() => handleNavClick(label, path)}
+                  className={`text-sm font-medium transition-colors ${
+                    activeTab === label
+                      ? 'text-purple-600 border-b-2 border-purple-600'
+                      : 'text-gray-600 hover:text-purple-600'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </nav>
+
+            {/* Search and Profile */}
+            <div className="flex items-center space-x-4">
+              <div className="relative hidden md:block">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search for events..."
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent w-64"
+                />
+              </div>
+              <button className="p-2 text-gray-600 hover:text-purple-600 transition-colors">
+                <Bell className="w-5 h-5" />
+              </button>
+              
+             {user ? (
+  <div className="flex items-center space-x-4">
+    <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+      <span className="text-white text-sm font-medium">
+        {user.displayName
+          ? user.displayName.charAt(0).toUpperCase()
+          : user.email.charAt(0).toUpperCase()}
+      </span>
+    </div>
+    <button
+      onClick={handleSignOut}
+      className="text-sm font-medium text-gray-600 hover:text-purple-600 transition-colors"
+    >
+      Sign Out
+    </button>
+  </div>
+) : (
+  <div className="flex items-center space-x-2">
+    <Link
+      to="/login"
+      className="text-sm font-medium text-gray-600 hover:text-purple-600 transition-colors"
+    >
+      Login
+    </Link>
+    <Link
+      to="/signup"
+      className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+    >
+      Sign Up
+    </Link>
+  </div>
+)}
+
+  </div>
+   </div>
+   </div>
+</header>
 
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-purple-100 to-pink-100 py-16">

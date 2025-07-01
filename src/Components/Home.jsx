@@ -1,23 +1,71 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Bell, Calendar, Users, Heart, Star, ArrowRight, Play, Check } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom'; // Added Link import
+import { useNavigate, Link } from 'react-router-dom';
+import { auth } from '../Firebase.jsx';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 const Home = () => {
   const [activeTab, setActiveTab] = useState('');
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Monitor authentication state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const navItems = [
-  { label: 'Events', path: '/event-discovery' },
-  { label: 'Learn', path: '/event-details' },
-  { label: 'Connect', path: '/contact-chat' },
-  { label: 'Profile', path: '/community' },
-];
+    { label: 'Events', path: '/event-discovery' },
+    { label: 'Learn', path: '/event-details' },
+    { label: 'Connect', path: '/contact-chat' },
+    { label: 'Profile', path: '/community' },
+  ];
 
-const handleNavClick = (label, path) => {
+  const handleNavClick = (label, path) => {
+    if (!user) {
+      // If user is not authenticated, redirect to login
+      navigate('/login', { state: { redirectTo: path } });
+      return;
+    }
     setActiveTab(label);
     navigate(path);
   };
+
+  const handleJoinEventPadi = () => {
+    if (user) {
+      // User is already authenticated, redirect to events or dashboard
+      navigate('/event-discovery');
+    } else {
+      // User is not authenticated, redirect to signup
+      navigate('/signup');
+    }
+  };
+
+  const handleFindYourNextEvent = () => {
+    if (!user) {
+      navigate('/login', { state: { redirectTo: '/event-discovery' } });
+      return;
+    }
+    navigate('/event-discovery');
+  };
+
+  const handleSignOut = async () => {
+  try {
+    await signOut(auth);
+    setUser(null);
+    navigate('/');
+  } catch (error) {
+    console.error('Sign out error:', error);
+  }
+};
+  // Sample data for featured events, testimonials, and how it works
+  // In a real application, this data would likely come from an API or database 
 
   const events = [
     {
@@ -123,6 +171,19 @@ const handleNavClick = (label, path) => {
     }
   ];
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mx-auto mb-4">
+            <Calendar className="w-5 h-5 text-white" />
+          </div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -138,21 +199,21 @@ const handleNavClick = (label, path) => {
             </div>
 
             {/* Navigation */}
-           <nav className="hidden md:flex space-x-8">
-      {navItems.map(({ label, path }) => (
-        <button
-          key={label}
-          onClick={() => handleNavClick(label, path)}
-          className={`text-sm font-medium transition-colors ${
-            activeTab === label
-              ? 'text-purple-600 border-b-2 border-purple-600'
-              : 'text-gray-600 hover:text-purple-600'
-          }`}
-        >
-          {label}
-        </button>
-      ))}
-    </nav>
+            <nav className="hidden md:flex space-x-8">
+              {navItems.map(({ label, path }) => (
+                <button
+                  key={label}
+                  onClick={() => handleNavClick(label, path)}
+                  className={`text-sm font-medium transition-colors ${
+                    activeTab === label
+                      ? 'text-purple-600 border-b-2 border-purple-600'
+                      : 'text-gray-600 hover:text-purple-600'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </nav>
 
             {/* Search and Profile */}
             <div className="flex items-center space-x-4">
@@ -167,9 +228,40 @@ const handleNavClick = (label, path) => {
               <button className="p-2 text-gray-600 hover:text-purple-600 transition-colors">
                 <Bell className="w-5 h-5" />
               </button>
-              <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-medium">A</span>
-              </div>
+              
+             {user ? (
+  <div className="flex items-center space-x-4">
+    <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+      <span className="text-white text-sm font-medium">
+        {user.displayName
+          ? user.displayName.charAt(0).toUpperCase()
+          : user.email.charAt(0).toUpperCase()}
+      </span>
+    </div>
+    <button
+      onClick={handleSignOut}
+      className="text-sm font-medium text-gray-600 hover:text-purple-600 transition-colors"
+    >
+      Sign Out
+    </button>
+  </div>
+) : (
+  <div className="flex items-center space-x-2">
+    <Link
+      to="/login"
+      className="text-sm font-medium text-gray-600 hover:text-purple-600 transition-colors"
+    >
+      Login
+    </Link>
+    <Link
+      to="/signup"
+      className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+    >
+      Sign Up
+    </Link>
+  </div>
+)}
+
             </div>
           </div>
         </div>
@@ -184,7 +276,10 @@ const handleNavClick = (label, path) => {
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
             Find community-curated events, and make every week unforgettable.
           </p>
-          <button className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-colors shadow-lg hover:shadow-xl">
+          <button 
+            onClick={handleFindYourNextEvent}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-colors shadow-lg hover:shadow-xl"
+          >
             Find Your Next Event
           </button>
         </div>
@@ -221,7 +316,16 @@ const handleNavClick = (label, path) => {
                       <span>{event.attendees.toLocaleString()}</span>
                     </span>
                   </div>
-                  <button className="mt-4 text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center space-x-1 transition-colors">
+                  <button 
+                    onClick={() => {
+                      if (!user) {
+                        navigate('/login', { state: { redirectTo: `/event/${event.id}` } });
+                        return;
+                      }
+                      // Navigate to event details
+                    }}
+                    className="mt-4 text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center space-x-1 transition-colors"
+                  >
                     <span>View Details</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
@@ -231,7 +335,16 @@ const handleNavClick = (label, path) => {
           </div>
 
           <div className="text-center mt-12">
-            <button className="text-purple-600 hover:text-purple-700 font-medium flex items-center space-x-2 mx-auto transition-colors">
+            <button 
+              onClick={() => {
+                if (!user) {
+                  navigate('/login', { state: { redirectTo: '/events' } });
+                  return;
+                }
+                navigate('/events');
+              }}
+              className="text-purple-600 hover:text-purple-700 font-medium flex items-center space-x-2 mx-auto transition-colors"
+            >
               <span>View All Events</span>
               <ArrowRight className="w-4 h-4" />
             </button>
@@ -299,8 +412,11 @@ const handleNavClick = (label, path) => {
           <p className="text-xl text-purple-100 mb-8 max-w-2xl mx-auto">
             Join thousands of event enthusiasts who've discovered their passion through EventPad.
           </p>
-          <button className="bg-white text-purple-600 hover:bg-gray-50 px-8 py-4 rounded-lg text-lg font-semibold transition-colors shadow-lg hover:shadow-xl">
-            Join EventPadi Now
+          <button 
+            onClick={handleJoinEventPadi}
+            className="bg-white text-purple-600 hover:bg-gray-50 px-8 py-4 rounded-lg text-lg font-semibold transition-colors shadow-lg hover:shadow-xl"
+          >
+            {user ? 'Explore Events' : 'Join EventPadi Now'}
           </button>
         </div>
       </section>
@@ -330,12 +446,6 @@ const handleNavClick = (label, path) => {
           
           <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400 text-sm">© 2025 EventPadi</p>
-            {/* <div className="flex items-center space-x-2 mt-4 md:mt-0">
-              <span className="text-gray-400 text-sm">Made with</span>
-              <div className="flex items-center space-x-1">
-                <span className="text-blue-400 font-semibold">Visily</span>
-              </div>
-            </div> */}
           </div>
         </div>
       </footer>
