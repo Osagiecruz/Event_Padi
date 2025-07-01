@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { auth } from '../Firebase.jsx';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 
+
 const Home = () => {
   const [activeTab, setActiveTab] = useState('');
   const [user, setUser] = useState(null);
@@ -319,10 +320,11 @@ const Home = () => {
                   <button 
                     onClick={() => {
                       if (!user) {
-                        navigate('/login', { state: { redirectTo: `/event/${event.id}` } });
+                        navigate('/login', { state: { redirectTo: `/event-details/${event.id}` } });
                         return;
                       }
                       // Navigate to event details
+                      navigate('/event-details', { state: { eventId: event.id, eventTitle: event.title } });
                     }}
                     className="mt-4 text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center space-x-1 transition-colors"
                   >
@@ -338,10 +340,10 @@ const Home = () => {
             <button 
               onClick={() => {
                 if (!user) {
-                  navigate('/login', { state: { redirectTo: '/events' } });
+                  navigate('/login', { state: { redirectTo: '/event-discovery' } });
                   return;
                 }
-                navigate('/events');
+                navigate('/event-discovery');
               }}
               className="text-purple-600 hover:text-purple-700 font-medium flex items-center space-x-2 mx-auto transition-colors"
             >
